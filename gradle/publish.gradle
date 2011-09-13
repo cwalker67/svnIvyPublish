@@ -1,0 +1,57 @@
+buildscript {
+	repositories {
+		mavenRepo(urls: ['http://localrepo:8081/nexus/content/groups/public/'])
+	}
+	
+	dependencies {
+		classpath group: 'org.tmatesoft.svnkit', name: 'svnkit', version: '1.2.0'
+		classpath group: 'ivysvn', name: 'ivysvnresolver', version: '2.1.0'
+	}
+	
+}
+
+releaseTagProperty = project.hasProperty('releaseTag') ? "${project.releaseTag}" : ""
+version = new Version(releaseTag: releaseTagProperty)
+
+jar {
+	archiveName=archivesBaseName +
+		(appendix ? "-${appendix}":"") +
+		".${extension}"
+}
+
+
+
+uploadArchives {
+	ivyPattern = "artifacts/[revision]/jboss/[organisation]/[module]/ivy.xml"
+	artifactPattern = "artifacts/[revision]/jboss/[organisation]/[module]/[artifact].[ext]"
+	
+	user = ''
+	password = ''
+    repo = ''
+	if (project.hasProperty('svnUser') && project.hasProperty('svnPassword') && project.hasProperty('svnRepo')) {
+		user = "${project.svnUser}"
+		password = "${project.svnPassword}"
+        repo = "${project.svnRepo}"
+	}
+	
+	uploadDescriptor = true
+
+	repositories {
+		add(new fm.last.ivy.plugins.svnresolver.SvnResolver()) {
+			name = 'artifacts'
+			repositoryRoot = repo
+			userName = user
+			userPassword = password
+			binaryDiff = false
+			cleanupPublishFolder = true
+			addIvyPattern "svnIvyPublish/${ivyPattern}"
+			addArtifactPattern "svnIvyPublish/${artifactPattern}"
+		}
+	}
+
+	doFirst {
+		if (!project.hasProperty('svnUser') || !project.hasProperty('svnPassword') || !project.hasProperty('svnRepo')) {
+			throw new InvalidUserDataException("Missing Subversion Repository Credentials")
+		}
+	}
+}

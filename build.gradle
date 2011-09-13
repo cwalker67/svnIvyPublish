@@ -1,0 +1,15 @@
+
+configure(sourceProjects()) {
+	apply from: "$rootDir/gradle/source.gradle"
+	apply from: "$rootDir/gradle/publish.gradle"
+}
+
+
+
+def sourceProjects() {
+	subprojects.findAll {!['api', 'integration', 'services'].contains(it.name)}	
+}
+
+
+task uploadArchives(dependsOn: sourceProjects()*.uploadArchives)
+
